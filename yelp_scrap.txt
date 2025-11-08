@@ -1,0 +1,42 @@
+def warm_up_yellowpages()->dict:
+    print(f"{YELLOW}[WARM-UP] Запускаем браузер для сбора cookies…{RESET}")
+    with sync_playwright() as p:
+        browser = p.chromium.launch(
+            headless=True,
+            args=[
+                '--no-sandbox','--disable-dev-shm-usage','--disable-gpu',
+                '--disable-gpu-sandbox','--no-zygote','--single-process',
+                '--disable-web-security','--disable-features=VizDisplayCompositor',
+                '--disable-software-rasterizer'
+            ]
+        )
+        page = browser.new_page(user_agent=random.choice(USER_AGENTS))
+        page.goto("https://www.yellowpages.com", wait_until='domcontentloaded')
+        random_sleep(2,4)
+        page.keyboard.press('End'); random_sleep(1,2)
+        page.keyboard.press('Home'); random_sleep(1,2)
+        page.click('header', position={'x':10,'y':10}, timeout=3_000)
+        random_sleep(1,2)
+
+        cookies = page.context.cookies()
+        # ❗️БЕРЁМ ДАННЫЕ ДО ЗАКРЫТИЯ БРАУЗЕРА
+        user_agent = page.evaluate('navigator.userAgent')
+        browser.close()
+
+    headers = {
+        'User-Agent': user_agent,
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.5',
+        'Accept-Encoding': 'gzip, deflate, br',
+        'DNT': '1',
+        'Connection': 'keep-alive',
+        'Upgrade-Insecure-Requests': '1',
+        'Sec-Fetch-Dest': 'document',
+        'Sec-Fetch-Mode': 'navigate',
+        'Sec-Fetch-Site': 'none',
+        'Sec-Fetch-User': '?1',
+    }
+    cookie_str = '; '.join(f"{c['name']}={c['value']}" for c in cookies)
+    headers['Cookie'] = cookie_str
+    print(f"{YELLOW}[WARM-UP] Получено {len(cookies)} cookies{RESET}")
+    return {'cookies':cookies,'headers':headers}
